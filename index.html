@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>todos 테스트</title></head>
+<body>
+  <h2>로그인</h2>
+  <input id="email" placeholder="이메일">
+  <input id="pw" type="password" placeholder="비밀번호">
+  <button onclick="login()">로그인</button>
+
+  <h2>내 할 일</h2>
+  <input id="title" placeholder="할 일 입력">
+  <button onclick="addTodo()">추가</button>
+  <ul id="list"></ul>
+  <p id="msg"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const db = supabase.createClient(
+      'https://bdxxpdkrsizcxiganwmf.supabase.co',
+      'sb_publishable_LFxR5ODU-2WjieSmtWpKlg_ByesgPRV'
+    );
+    const msg = (t) => document.getElementById('msg').textContent = t;
+
+    async function login() {
+      const { error } = await db.auth.signInWithPassword({
+        email: document.getElementById('email').value,
+        password: document.getElementById('pw').value,
+      });
+      if (error) return msg('로그인 실패: ' + error.message);
+      msg('로그인 성공!');
+      loadTodos();
+    }
+
+    async function loadTodos() {                       // Read
+      const { data, error } = await db.from('todos').select('*').order('id');
+      if (error) return msg(error.message);
+      document.getElementById('list').innerHTML =
+        data.map(t => `<li>${t.title} ${t.done ? '✅' : ''}</li>`).join('');
+    }
+
+    async function addTodo() {                         // Create
+      const title = document.getElementById('title').value;
+      const { error } = await db.from('todos').insert({ title });
+      if (error) return msg('추가 실패: ' + error.message);
+      loadTodos();
+    }
+
+    loadTodos(); // 로그인 전에 불러오면 → RLS 때문에 빈 목록
+  </script>
+</body>
+</html>
